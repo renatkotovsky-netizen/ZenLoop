@@ -1,0 +1,2086 @@
+ <!DOCTYPE html>
+<html lang="ru">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zen Loop: Поток Гармонии</title>
+    <!-- CrazyGames SDK v2 -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v2.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: #060913;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 500px;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #0b0f19;
+            border: 1px solid #1e293b;
+            padding: 16px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+        }
+
+        /* HUD Header */
+        #hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #38bdf8;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .hud-btn {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #0284c7;
+            color: #38bdf8;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .hud-btn:active {
+            background: #0284c7;
+            color: #fff;
+            transform: scale(0.95);
+        }
+
+        .hud-btn.reward-btn {
+            border-color: #eab308;
+            color: #fef08a;
+            background: rgba(50, 40, 15, 0.8);
+        }
+
+        /* Canvas Area */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: auto;
+        }
+
+        #loopCanvas {
+            background-color: #020617;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 18px;
+            box-shadow: 0 0 25px rgba(2, 132, 199, 0.15);
+            touch-action: none;
+            cursor: pointer;
+        }
+
+        /* Bottom Control Bar */
+        #bottom-bar {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 14px;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            border: 1px solid #38bdf8;
+            color: #38bdf8;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-btn:active {
+            background: #0284c7;
+            color: white;
+            transform: scale(0.97);
+        }
+
+        /* Modal Overlay */
+        .modal {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(6, 9, 19, 0.88);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .hidden { display: none !important; }
+
+        .modal-card {
+            background: #0f172a;
+            border: 1px solid #38bdf8;
+            padding: 26px 22px;
+            border-radius: 20px;
+            text-align: center;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 0 35px rgba(56, 189, 248, 0.3);
+        }
+
+        .modal-card h2 {
+            color: #38bdf8;
+            font-size: 22px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .modal-card p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .btn-modal {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            border: none;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- HUD -->
+        <div id="hud">
+            <button id="btn-sound" class="hud-btn">🔊 Звук</button>
+            <div>Уровень: <span id="level-num">1</span></div>
+            <button id="btn-hint" class="hud-btn reward-btn">💡 Подсказка</button>
+        </div>
+
+        <!-- Canvas -->
+        <div id="canvas-wrapper">
+            <canvas id="loopCanvas"></canvas>
+        </div>
+
+        <!-- Нижняя панель -->
+        <div id="bottom-bar">
+            <button id="btn-prev" class="action-btn">◀ Назад</button>
+            <button id="btn-random" class="action-btn">🎲 Бесконечный</button>
+            <button id="btn-next" class="action-btn">Вперед ▶</button>
+        </div>
+
+        <!-- Модальное окно победы -->
+        <div id="win-modal" class="modal hidden">
+            <div class="modal-card">
+                <h2>ГАРМОНИЯ ДОСТИГНУТА!</h2>
+                <p>Все потоки света соединены в единую цепь.</p>
+                <button id="btn-next-level" class="btn-modal">СЛЕДУЮЩИЙ УЗЕЛ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CRAZYGAMES SDK ИНТЕГРАЦИЯ ---
+        let cgSDK = null;
+
+        function initSDK() {
+            if (window.CrazyGames && window.CrazyGames.SDK) {
+                cgSDK = window.CrazyGames.SDK;
+                try {
+                    cgSDK.game.sdkGameLoadingStart();
+                } catch(e){}
+            }
+        }
+
+        function triggerMidrollAd(onComplete) {
+            if (cgSDK && cgSDK.ad) {
+                try {
+                    cgSDK.game.gameplayStop();
+                    cgSDK.ad.requestAd('midroll', {
+                        adStarted: () => {},
+                        adFinished: () => {
+                            cgSDK.game.gameplayStart();
+                            if (onComplete) onComplete();
+                        },
+                        adError: (error) => {
+                            cgSDK.game.gameplayStart();
+                            if (onComplete) onComplete();
+                        }
+                    });
+                } catch(e) {
+                    if (onComplete) onComplete();
+                }
+            } else {
+                if (onComplete) onComplete();
+            }
+        }
+
+        function triggerRewardedAd(onSuccess) {
+            if (cgSDK && cgSDK.ad) {
+                try {
+                    cgSDK.game.gameplayStop();
+                    cgSDK.ad.requestAd('rewarded', {
+                        adStarted: () => {},
+                        adFinished: () => {
+                            cgSDK.game.gameplayStart();
+                            if (onSuccess) onSuccess();
+                        },
+                        adError: (error) => {
+                            cgSDK.game.gameplayStart();
+                            alert("Рекламный ролик не загружен. Попробуйте позже.");
+                        }
+                    });
+                } catch(e) {
+                    // Локальный фолбэк для тестов без SDK
+                    if (onSuccess) onSuccess();
+                }
+            } else {
+                // Если SDK нет (тестирование локально), даем подсказку бесплатно
+                if (onSuccess) onSuccess();
+            }
+        }
+
+        // --- 2. АУДИО СИНТЕЗАТОР ASMR (Пентатоника) ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        const PENTATONIC = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playChime(index) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                
+                const freq = PENTATONIC[index % PENTATONIC.length];
+                const now = audioCtx.currentTime;
+
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } catch(e){}
+        }
+
+        function playWinChord() {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            [0, 2, 4, 7].forEach((noteIdx, delay) => {
+                setTimeout(() => playChime(noteIdx), delay * 90);
+            });
+        }
+
+        // --- 3. ИГРОВАЯ ЛОГИКА ---
+        const DIRS = [
+            { dr: -1, dc: 0 },
+            { dr: 0, dc: 1 },
+            { dr: 1, dc: 0 },
+            { dr: 0, dc: -1 }
+        ];
+
+        const TILE_TYPES = {
+            0: [],            
+            1: [0, 2],        
+            2: [0, 1],        
+            3: [0, 1, 3],     
+            4: [0, 1, 2, 3],  
+            5: [0]            
+        };
+
+        const HANDCRAFTED_LEVELS = [
+            {
+                cols: 3, rows: 3,
+                grid: [
+                    [2, 1, 2],
+                    [1, 0, 1],
+                    [2, 1, 2]
+                ]
+            },
+            {
+                cols: 3, rows: 3,
+                grid: [
+                    [2, 3, 2],
+                    [2, 4, 2],
+                    [2, 3, 2]
+                ]
+            },
+            {
+                cols: 4, rows: 4,
+                grid: [
+                    [2, 1, 1, 2],
+                    [1, 2, 2, 1],
+                    [1, 2, 2, 1],
+                    [2, 1, 1, 2]
+                ]
+            },
+            {
+                cols: 4, rows: 4,
+                grid: [
+                    [2, 3, 3, 2],
+                    [3, 4, 4, 3],
+                    [3, 4, 4, 3],
+                    [2, 3, 3, 2]
+                ]
+            },
+            {
+                cols: 5, rows: 5,
+                grid: [
+                    [2, 1, 3, 1, 2],
+                    [1, 2, 4, 2, 1],
+                    [3, 4, 0, 4, 3],
+                    [1, 2, 4, 2, 1],
+                    [2, 1, 3, 1, 2]
+                ]
+            }
+        ];
+
+        const canvas = document.getElementById('loopCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentLevelIdx = 0;
+        let grid = []; 
+        let cols = 3;
+        let rows = 3;
+        let tileSize = 80;
+        let isSolved = false;
+        let particles = [];
+
+        function initCanvas() {
+            const minDim = Math.min(window.innerWidth - 40, 420);
+            canvas.width = minDim;
+            canvas.height = minDim;
+            tileSize = canvas.width / cols;
+        }
+
+        function loadLevel(idx) {
+            currentLevelIdx = idx;
+            document.getElementById('level-num').innerText = idx + 1;
+            isSolved = false;
+
+            const lvlData = HANDCRAFTED_LEVELS[idx % HANDCRAFTED_LEVELS.length];
+            cols = lvlData.cols;
+            rows = lvlData.rows;
+            initCanvas();
+
+            grid = [];
+            for (let r = 0; r < rows; r++) {
+                grid[r] = [];
+                for (let c = 0; c < cols; c++) {
+                    const type = lvlData.grid[r][c];
+                    const rot = Math.floor(Math.random() * 4);
+                    grid[r][c] = {
+                        type: type,
+                        rot: rot,
+                        correctRot: 0, // базовая ориентация
+                        currentAngle: rot * (Math.PI / 2),
+                        targetAngle: rot * (Math.PI / 2)
+                    };
+                }
+            }
+
+            if (cgSDK && cgSDK.game) {
+                try { cgSDK.game.gameplayStart(); } catch(e){}
+            }
+        }
+
+        function generateRandomLevel() {
+            document.getElementById('level-num').innerText = "Бесконечный 🎲";
+            isSolved = false;
+            cols = 4;
+            rows = 4;
+            initCanvas();
+
+            const types = [1, 2, 3, 4];
+            grid = [];
+            for (let r = 0; r < rows; r++) {
+                grid[r] = [];
+                for (let c = 0; c < cols; c++) {
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    const rot = Math.floor(Math.random() * 4);
+                    grid[r][c] = {
+                        type: type,
+                        rot: rot,
+                        correctRot: 0,
+                        currentAngle: rot * (Math.PI / 2),
+                        targetAngle: rot * (Math.PI / 2)
+                    };
+                }
+            }
+        }
+
+        function hasConn(tile, dir) {
+            if (tile.type === 0) return false;
+            const baseDir = (dir - tile.rot + 4) % 4;
+            return TILE_TYPES[tile.type].includes(baseDir);
+        }
+
+        function checkSolution() {
+            let activeConnectionsCount = 0;
+            let isPerfect = true;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tile = grid[r][c];
+                    if (tile.type === 0) continue;
+
+                    for (let d = 0; d < 4; d++) {
+                        if (hasConn(tile, d)) {
+                            activeConnectionsCount++;
+                            const nr = r + DIRS[d].dr;
+                            const nc = c + DIRS[d].dc;
+
+                            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) {
+                                isPerfect = false;
+                                break;
+                            }
+
+                            const neighbor = grid[nr][nc];
+                            const oppDir = (d + 2) % 4;
+                            if (!hasConn(neighbor, oppDir)) {
+                                isPerfect = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!isPerfect) break;
+                }
+                if (!isPerfect) break;
+            }
+
+            if (isPerfect && activeConnectionsCount > 0) {
+                isSolved = true;
+                playWinChord();
+                spawnWinParticles();
+
+                if (cgSDK && cgSDK.game) {
+                    try { cgSDK.game.gameplayStop(); } catch(e){}
+                }
+
+                // Показываем рекламу при прохождении уровня перед модальным окном
+                triggerMidrollAd(() => {
+                    document.getElementById('win-modal').classList.remove('hidden');
+                });
+            }
+        }
+
+        function applyHint() {
+            if (isSolved) return;
+            // Ищем первый невернувшийся узел
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tile = grid[r][c];
+                    if (tile.type !== 0 && tile.type !== 4) { // Крест заменять не надо
+                        tile.rot = (tile.rot + 1) % 4;
+                        tile.targetAngle += Math.PI / 2;
+                        playChime(r + c);
+                        checkSolution();
+                        return;
+                    }
+                }
+            }
+        }
+
+        // --- 4. РЕНДЕРИНГ И АНИМАЦИИ ---
+        function spawnWinParticles() {
+            particles = [];
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    color: Math.random() > 0.5 ? '#38bdf8' : '#10b981',
+                    size: Math.random() * 5 + 3,
+                    life: 1.0
+                });
+            }
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.02;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function renderLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tile = grid[r][c];
+                    tile.currentAngle += (tile.targetAngle - tile.currentAngle) * 0.25;
+
+                    const cx = c * tileSize + tileSize / 2;
+                    const cy = r * tileSize + tileSize / 2;
+
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(tile.currentAngle);
+
+                    const conns = TILE_TYPES[tile.type];
+                    if (conns && conns.length > 0) {
+                        ctx.lineWidth = 6;
+                        ctx.lineCap = 'round';
+
+                        if (isSolved) {
+                            ctx.strokeStyle = '#10b981';
+                            ctx.shadowColor = '#10b981';
+                            ctx.shadowBlur = 12;
+                        } else {
+                            ctx.strokeStyle = '#38bdf8';
+                            ctx.shadowColor = '#38bdf8';
+                            ctx.shadowBlur = 6;
+                        }
+
+                        conns.forEach(d => {
+                            ctx.beginPath();
+                            ctx.moveTo(0, 0);
+                            if (d === 0) ctx.lineTo(0, -tileSize / 2);
+                            if (d === 1) ctx.lineTo(tileSize / 2, 0);
+                            if (d === 2) ctx.lineTo(0, tileSize / 2);
+                            if (d === 3) ctx.lineTo(-tileSize / 2, 0);
+                            ctx.stroke();
+                        });
+
+                        ctx.fillStyle = isSolved ? '#10b981' : '#38bdf8';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.restore();
+                    ctx.strokeStyle = '#0f172a';
+                    ctx.strokeRect(c * tileSize, r * tileSize, tileSize, tileSize);
+                }
+            }
+
+            updateAndDrawParticles();
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- 5. СОБЫТИЯ И КНОПКИ ---
+        canvas.addEventListener('pointerdown', (e) => {
+            if (isSolved) return;
+            initAudio();
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const c = Math.floor(x / tileSize);
+            const r = Math.floor(y / tileSize);
+
+            if (r >= 0 && r < rows && c >= 0 && c < cols) {
+                const tile = grid[r][c];
+                if (tile.type !== 0) {
+                    tile.rot = (tile.rot + 1) % 4;
+                    tile.targetAngle += Math.PI / 2;
+
+                    playChime(r + c);
+                    checkSolution();
+                }
+            }
+        });
+
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btn-sound').innerText = soundEnabled ? '🔊 Звук' : '🔇 Выкл';
+        });
+
+        document.getElementById('btn-hint').addEventListener('click', () => {
+            triggerRewardedAd(() => {
+                applyHint();
+            });
+        });
+
+        document.getElementById('btn-next-level').addEventListener('click', () => {
+            document.getElementById('win-modal').classList.add('hidden');
+            loadLevel(currentLevelIdx + 1);
+        });
+
+        document.getElementById('btn-next').addEventListener('click', () => {
+            loadLevel(currentLevelIdx + 1);
+        });
+
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            if (currentLevelIdx > 0) loadLevel(currentLevelIdx - 1);
+        });
+
+        document.getElementById('btn-random').addEventListener('click', () => {
+            generateRandomLevel();
+        });
+
+        window.addEventListener('resize', initCanvas);
+
+        window.onload = () => {
+            initSDK();
+            loadLevel(0);
+            if (cgSDK && cgSDK.game) {
+                try { cgSDK.game.sdkGameLoadingStop(); } catch(e){}
+            }
+            requestAnimationFrame(renderLoop);
+        };
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zen Loop: Поток Гармонии</title>
+    <!-- CrazyGames SDK v2 -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v2.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: #060913;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 500px;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #0b0f19;
+            border: 1px solid #1e293b;
+            padding: 16px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+        }
+
+        /* HUD Header */
+        #hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #38bdf8;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .hud-btn {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #0284c7;
+            color: #38bdf8;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .hud-btn:active {
+            background: #0284c7;
+            color: #fff;
+            transform: scale(0.95);
+        }
+
+        .hud-btn.reward-btn {
+            border-color: #eab308;
+            color: #fef08a;
+            background: rgba(50, 40, 15, 0.8);
+        }
+
+        /* Canvas Area */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: auto;
+        }
+
+        #loopCanvas {
+            background-color: #020617;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 18px;
+            box-shadow: 0 0 25px rgba(2, 132, 199, 0.15);
+            touch-action: none;
+            cursor: pointer;
+        }
+
+        /* Bottom Control Bar */
+        #bottom-bar {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 14px;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            border: 1px solid #38bdf8;
+            color: #38bdf8;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-btn:active {
+            background: #0284c7;
+            color: white;
+            transform: scale(0.97);
+        }
+
+        /* Modal Overlay */
+        .modal {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(6, 9, 19, 0.88);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .hidden { display: none !important; }
+
+        .modal-card {
+            background: #0f172a;
+            border: 1px solid #38bdf8;
+            padding: 26px 22px;
+            border-radius: 20px;
+            text-align: center;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 0 35px rgba(56, 189, 248, 0.3);
+        }
+
+        .modal-card h2 {
+            color: #38bdf8;
+            font-size: 22px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .modal-card p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .btn-modal {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            border: none;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- HUD -->
+        <div id="hud">
+            <button id="btn-sound" class="hud-btn">🔊 Звук</button>
+            <div>Уровень: <span id="level-num">1</span></div>
+            <button id="btn-hint" class="hud-btn reward-btn">💡 Подсказка</button>
+        </div>
+
+        <!-- Canvas -->
+        <div id="canvas-wrapper">
+            <canvas id="loopCanvas"></canvas>
+        </div>
+
+        <!-- Нижняя панель -->
+        <div id="bottom-bar">
+            <button id="btn-prev" class="action-btn">◀ Назад</button>
+            <button id="btn-random" class="action-btn">🎲 Бесконечный</button>
+            <button id="btn-next" class="action-btn">Вперед ▶</button>
+        </div>
+
+        <!-- Модальное окно победы -->
+        <div id="win-modal" class="modal hidden">
+            <div class="modal-card">
+                <h2>ГАРМОНИЯ ДОСТИГНУТА!</h2>
+                <p>Все потоки света соединены в единую цепь.</p>
+                <button id="btn-next-level" class="btn-modal">СЛЕДУЮЩИЙ УЗЕЛ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CRAZYGAMES SDK ИНТЕГРАЦИЯ ---
+        let cgSDK = null;
+
+        function initSDK() {
+            if (window.CrazyGames && window.CrazyGames.SDK) {
+                cgSDK = window.CrazyGames.SDK;
+                try {
+                    cgSDK.game.sdkGameLoadingStart();
+                } catch(e){}
+            }
+        }
+
+        function triggerMidrollAd(onComplete) {
+            if (cgSDK && cgSDK.ad) {
+                try {
+                    cgSDK.game.gameplayStop();
+                    cgSDK.ad.requestAd('midroll', {
+                        adStarted: () => {},
+                        adFinished: () => {
+                            cgSDK.game.gameplayStart();
+                            if (onComplete) onComplete();
+                        },
+                        adError: (error) => {
+                            cgSDK.game.gameplayStart();
+                            if (onComplete) onComplete();
+                        }
+                    });
+                } catch(e) {
+                    if (onComplete) onComplete();
+                }
+            } else {
+                if (onComplete) onComplete();
+            }
+        }
+
+        function triggerRewardedAd(onSuccess) {
+            if (cgSDK && cgSDK.ad) {
+                try {
+                    cgSDK.game.gameplayStop();
+                    cgSDK.ad.requestAd('rewarded', {
+                        adStarted: () => {},
+                        adFinished: () => {
+                            cgSDK.game.gameplayStart();
+                            if (onSuccess) onSuccess();
+                        },
+                        adError: (error) => {
+                            cgSDK.game.gameplayStart();
+                            alert("Рекламный ролик не загружен. Попробуйте позже.");
+                        }
+                    });
+                } catch(e) {
+                    // Локальный фолбэк для тестов без SDK
+                    if (onSuccess) onSuccess();
+                }
+            } else {
+                // Если SDK нет (тестирование локально), даем подсказку бесплатно
+                if (onSuccess) onSuccess();
+            }
+        }
+
+        // --- 2. АУДИО СИНТЕЗАТОР ASMR (Пентатоника) ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        const PENTATONIC = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playChime(index) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                
+                const freq = PENTATONIC[index % PENTATONIC.length];
+                const now = audioCtx.currentTime;
+
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } catch(e){}
+        }
+
+        function playWinChord() {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            [0, 2, 4, 7].forEach((noteIdx, delay) => {
+                setTimeout(() => playChime(noteIdx), delay * 90);
+            });
+        }
+
+        // --- 3. ИГРОВАЯ ЛОГИКА ---
+        const DIRS = [
+            { dr: -1, dc: 0 },
+            { dr: 0, dc: 1 },
+            { dr: 1, dc: 0 },
+            { dr: 0, dc: -1 }
+        ];
+
+        const TILE_TYPES = {
+            0: [],            
+            1: [0, 2],        
+            2: [0, 1],        
+            3: [0, 1, 3],     
+            4: [0, 1, 2, 3],  
+            5: [0]            
+        };
+
+        const HANDCRAFTED_LEVELS = [
+            {
+                cols: 3, rows: 3,
+                grid: [
+                    [2, 1, 2],
+                    [1, 0, 1],
+                    [2, 1, 2]
+                ]
+            },
+            {
+                cols: 3, rows: 3,
+                grid: [
+                    [2, 3, 2],
+                    [2, 4, 2],
+                    [2, 3, 2]
+                ]
+            },
+            {
+                cols: 4, rows: 4,
+                grid: [
+                    [2, 1, 1, 2],
+                    [1, 2, 2, 1],
+                    [1, 2, 2, 1],
+                    [2, 1, 1, 2]
+                ]
+            },
+            {
+                cols: 4, rows: 4,
+                grid: [
+                    [2, 3, 3, 2],
+                    [3, 4, 4, 3],
+                    [3, 4, 4, 3],
+                    [2, 3, 3, 2]
+                ]
+            },
+            {
+                cols: 5, rows: 5,
+                grid: [
+                    [2, 1, 3, 1, 2],
+                    [1, 2, 4, 2, 1],
+                    [3, 4, 0, 4, 3],
+                    [1, 2, 4, 2, 1],
+                    [2, 1, 3, 1, 2]
+                ]
+            }
+        ];
+
+        const canvas = document.getElementById('loopCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentLevelIdx = 0;
+        let grid = []; 
+        let cols = 3;
+        let rows = 3;
+        let tileSize = 80;
+        let isSolved = false;
+        let particles = [];
+
+        function initCanvas() {
+            const minDim = Math.min(window.innerWidth - 40, 420);
+            canvas.width = minDim;
+            canvas.height = minDim;
+            tileSize = canvas.width / cols;
+        }
+
+        function loadLevel(idx) {
+            currentLevelIdx = idx;
+            document.getElementById('level-num').innerText = idx + 1;
+            isSolved = false;
+
+            const lvlData = HANDCRAFTED_LEVELS[idx % HANDCRAFTED_LEVELS.length];
+            cols = lvlData.cols;
+            rows = lvlData.rows;
+            initCanvas();
+
+            grid = [];
+            for (let r = 0; r < rows; r++) {
+                grid[r] = [];
+                for (let c = 0; c < cols; c++) {
+                    const type = lvlData.grid[r][c];
+                    const rot = Math.floor(Math.random() * 4);
+                    grid[r][c] = {
+                        type: type,
+                        rot: rot,
+                        correctRot: 0, // базовая ориентация
+                        currentAngle: rot * (Math.PI / 2),
+                        targetAngle: rot * (Math.PI / 2)
+                    };
+                }
+            }
+
+            if (cgSDK && cgSDK.game) {
+                try { cgSDK.game.gameplayStart(); } catch(e){}
+            }
+        }
+
+        function generateRandomLevel() {
+            document.getElementById('level-num').innerText = "Бесконечный 🎲";
+            isSolved = false;
+            cols = 4;
+            rows = 4;
+            initCanvas();
+
+            const types = [1, 2, 3, 4];
+            grid = [];
+            for (let r = 0; r < rows; r++) {
+                grid[r] = [];
+                for (let c = 0; c < cols; c++) {
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    const rot = Math.floor(Math.random() * 4);
+                    grid[r][c] = {
+                        type: type,
+                        rot: rot,
+                        correctRot: 0,
+                        currentAngle: rot * (Math.PI / 2),
+                        targetAngle: rot * (Math.PI / 2)
+                    };
+                }
+            }
+        }
+
+        function hasConn(tile, dir) {
+            if (tile.type === 0) return false;
+            const baseDir = (dir - tile.rot + 4) % 4;
+            return TILE_TYPES[tile.type].includes(baseDir);
+        }
+
+        function checkSolution() {
+            let activeConnectionsCount = 0;
+            let isPerfect = true;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tile = grid[r][c];
+                    if (tile.type === 0) continue;
+
+                    for (let d = 0; d < 4; d++) {
+                        if (hasConn(tile, d)) {
+                            activeConnectionsCount++;
+                            const nr = r + DIRS[d].dr;
+                            const nc = c + DIRS[d].dc;
+
+                            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) {
+                                isPerfect = false;
+                                break;
+                            }
+
+                            const neighbor = grid[nr][nc];
+                            const oppDir = (d + 2) % 4;
+                            if (!hasConn(neighbor, oppDir)) {
+                                isPerfect = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!isPerfect) break;
+                }
+                if (!isPerfect) break;
+            }
+
+            if (isPerfect && activeConnectionsCount > 0) {
+                isSolved = true;
+                playWinChord();
+                spawnWinParticles();
+
+                if (cgSDK && cgSDK.game) {
+                    try { cgSDK.game.gameplayStop(); } catch(e){}
+                }
+
+                // Показываем рекламу при прохождении уровня перед модальным окном
+                triggerMidrollAd(() => {
+                    document.getElementById('win-modal').classList.remove('hidden');
+                });
+            }
+        }
+
+        function applyHint() {
+            if (isSolved) return;
+            // Ищем первый невернувшийся узел
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tile = grid[r][c];
+                    if (tile.type !== 0 && tile.type !== 4) { // Крест заменять не надо
+                        tile.rot = (tile.rot + 1) % 4;
+                        tile.targetAngle += Math.PI / 2;
+                        playChime(r + c);
+                        checkSolution();
+                        return;
+                    }
+                }
+            }
+        }
+
+        // --- 4. РЕНДЕРИНГ И АНИМАЦИИ ---
+        function spawnWinParticles() {
+            particles = [];
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    color: Math.random() > 0.5 ? '#38bdf8' : '#10b981',
+                    size: Math.random() * 5 + 3,
+                    life: 1.0
+                });
+            }
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.02;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function renderLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tile = grid[r][c];
+                    tile.currentAngle += (tile.targetAngle - tile.currentAngle) * 0.25;
+
+                    const cx = c * tileSize + tileSize / 2;
+                    const cy = r * tileSize + tileSize / 2;
+
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(tile.currentAngle);
+
+                    const conns = TILE_TYPES[tile.type];
+                    if (conns && conns.length > 0) {
+                        ctx.lineWidth = 6;
+                        ctx.lineCap = 'round';
+
+                        if (isSolved) {
+                            ctx.strokeStyle = '#10b981';
+                            ctx.shadowColor = '#10b981';
+                            ctx.shadowBlur = 12;
+                        } else {
+                            ctx.strokeStyle = '#38bdf8';
+                            ctx.shadowColor = '#38bdf8';
+                            ctx.shadowBlur = 6;
+                        }
+
+                        conns.forEach(d => {
+                            ctx.beginPath();
+                            ctx.moveTo(0, 0);
+                            if (d === 0) ctx.lineTo(0, -tileSize / 2);
+                            if (d === 1) ctx.lineTo(tileSize / 2, 0);
+                            if (d === 2) ctx.lineTo(0, tileSize / 2);
+                            if (d === 3) ctx.lineTo(-tileSize / 2, 0);
+                            ctx.stroke();
+                        });
+
+                        ctx.fillStyle = isSolved ? '#10b981' : '#38bdf8';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.restore();
+                    ctx.strokeStyle = '#0f172a';
+                    ctx.strokeRect(c * tileSize, r * tileSize, tileSize, tileSize);
+                }
+            }
+
+            updateAndDrawParticles();
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- 5. СОБЫТИЯ И КНОПКИ ---
+        canvas.addEventListener('pointerdown', (e) => {
+            if (isSolved) return;
+            initAudio();
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const c = Math.floor(x / tileSize);
+            const r = Math.floor(y / tileSize);
+
+            if (r >= 0 && r < rows && c >= 0 && c < cols) {
+                const tile = grid[r][c];
+                if (tile.type !== 0) {
+                    tile.rot = (tile.rot + 1) % 4;
+                    tile.targetAngle += Math.PI / 2;
+
+                    playChime(r + c);
+                    checkSolution();
+                }
+            }
+        });
+
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btn-sound').innerText = soundEnabled ? '🔊 Звук' : '🔇 Выкл';
+        });
+
+        document.getElementById('btn-hint').addEventListener('click', () => {
+            triggerRewardedAd(() => {
+                applyHint();
+            });
+        });
+
+        document.getElementById('btn-next-level').addEventListener('click', () => {
+            document.getElementById('win-modal').classList.add('hidden');
+            loadLevel(currentLevelIdx + 1);
+        });
+
+        document.getElementById('btn-next').addEventListener('click', () => {
+            loadLevel(currentLevelIdx + 1);
+        });
+
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            i<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zen Loop: Поток Гармонии</title>
+    <!-- CrazyGames SDK v2 -->
+    <script src="https://sdk.crazygames.com/crazygames-sdk-v2.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: #060913;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 500px;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #0b0f19;
+            border: 1px solid #1e293b;
+            padding: 16px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+        }
+
+        /* HUD Header */
+        #hud {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #38bdf8;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .hud-btn {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #0284c7;
+            color: #38bdf8;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .hud-btn:active {
+            background: #0284c7;
+            color: #fff;
+            transform: scale(0.95);
+        }
+
+        .hud-btn.reward-btn {
+            border-color: #eab308;
+            color: #fef08a;
+            background: rgba(50, 40, 15, 0.8);
+        }
+
+        /* Canvas Area */
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: auto;
+        }
+
+        #loopCanvas {
+            background-color: #020617;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 18px;
+            box-shadow: 0 0 25px rgba(2, 132, 199, 0.15);
+            touch-action: none;
+            cursor: pointer;
+        }
+
+        /* Bottom Control Bar */
+        #bottom-bar {
+            width: 100%;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 14px;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            border: 1px solid #38bdf8;
+            color: #38bdf8;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-btn:active {
+            background: #0284c7;
+            color: white;
+            transform: scale(0.97);
+        }
+
+        /* Modal Overlay */
+        .modal {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(6, 9, 19, 0.88);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .hidden { display: none !important; }
+
+        .modal-card {
+            background: #0f172a;
+            border: 1px solid #38bdf8;
+            padding: 26px 22px;
+            border-radius: 20px;
+            text-align: center;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 0 35px rgba(56, 189, 248, 0.3);
+        }
+
+        .modal-card h2 {
+            color: #38bdf8;
+            font-size: 22px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .modal-card p {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .btn-modal {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            border: none;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <!-- HUD -->
+        <div id="hud">
+            <button id="btn-sound" class="hud-btn">🔊 Звук</button>
+            <div>Уровень: <span id="level-num">1</span></div>
+            <button id="btn-hint" class="hud-btn reward-btn">💡 Подсказка</button>
+        </div>
+
+        <!-- Canvas -->
+        <div id="canvas-wrapper">
+            <canvas id="loopCanvas"></canvas>
+        </div>
+
+        <!-- Нижняя панель -->
+        <div id="bottom-bar">
+            <button id="btn-prev" class="action-btn">◀ Назад</button>
+            <button id="btn-random" class="action-btn">🎲 Бесконечный</button>
+            <button id="btn-next" class="action-btn">Вперед ▶</button>
+        </div>
+
+        <!-- Модальное окно победы -->
+        <div id="win-modal" class="modal hidden">
+            <div class="modal-card">
+                <h2>ГАРМОНИЯ ДОСТИГНУТА!</h2>
+                <p>Все потоки света соединены в единую цепь.</p>
+                <button id="btn-next-level" class="btn-modal">СЛЕДУЮЩИЙ УЗЕЛ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CRAZYGAMES SDK ИНТЕГРАЦИЯ ---
+        let cgSDK = null;
+
+        function initSDK() {
+            if (window.CrazyGames && window.CrazyGames.SDK) {
+                cgSDK = window.CrazyGames.SDK;
+                try {
+                    cgSDK.game.sdkGameLoadingStart();
+                } catch(e){}
+            }
+        }
+
+        function triggerMidrollAd(onComplete) {
+            if (cgSDK && cgSDK.ad) {
+                try {
+                    cgSDK.game.gameplayStop();
+                    cgSDK.ad.requestAd('midroll', {
+                        adStarted: () => {},
+                        adFinished: () => {
+                            cgSDK.game.gameplayStart();
+                            if (onComplete) onComplete();
+                        },
+                        adError: (error) => {
+                            cgSDK.game.gameplayStart();
+                            if (onComplete) onComplete();
+                        }
+                    });
+                } catch(e) {
+                    if (onComplete) onComplete();
+                }
+            } else {
+                if (onComplete) onComplete();
+            }
+        }
+
+        function triggerRewardedAd(onSuccess) {
+            if (cgSDK && cgSDK.ad) {
+                try {
+                    cgSDK.game.gameplayStop();
+                    cgSDK.ad.requestAd('rewarded', {
+                        adStarted: () => {},
+                        adFinished: () => {
+                            cgSDK.game.gameplayStart();
+                            if (onSuccess) onSuccess();
+                        },
+                        adError: (error) => {
+                            cgSDK.game.gameplayStart();
+                            alert("Рекламный ролик не загружен. Попробуйте позже.");
+                        }
+                    });
+                } catch(e) {
+                    // Локальный фолбэк для тестов без SDK
+                    if (onSuccess) onSuccess();
+                }
+            } else {
+                // Если SDK нет (тестирование локально), даем подсказку бесплатно
+                if (onSuccess) onSuccess();
+            }
+        }
+
+        // --- 2. АУДИО СИНТЕЗАТОР ASMR (Пентатоника) ---
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        const PENTATONIC = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playChime(index) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                
+                const freq = PENTATONIC[index % PENTATONIC.length];
+                const now = audioCtx.currentTime;
+
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } catch(e){}
+        }
+
+        function playWinChord() {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            [0, 2, 4, 7].forEach((noteIdx, delay) => {
+                setTimeout(() => playChime(noteIdx), delay * 90);
+            });
+        }
+
+        // --- 3. ИГРОВАЯ ЛОГИКА ---
+        const DIRS = [
+            { dr: -1, dc: 0 },
+            { dr: 0, dc: 1 },
+            { dr: 1, dc: 0 },
+            { dr: 0, dc: -1 }
+        ];
+
+        const TILE_TYPES = {
+            0: [],            
+            1: [0, 2],        
+            2: [0, 1],        
+            3: [0, 1, 3],     
+            4: [0, 1, 2, 3],  
+            5: [0]            
+        };
+
+        const HANDCRAFTED_LEVELS = [
+            {
+                cols: 3, rows: 3,
+                grid: [
+                    [2, 1, 2],
+                    [1, 0, 1],
+                    [2, 1, 2]
+                ]
+            },
+            {
+                cols: 3, rows: 3,
+                grid: [
+                    [2, 3, 2],
+                    [2, 4, 2],
+                    [2, 3, 2]
+                ]
+            },
+            {
+                cols: 4, rows: 4,
+                grid: [
+                    [2, 1, 1, 2],
+                    [1, 2, 2, 1],
+                    [1, 2, 2, 1],
+                    [2, 1, 1, 2]
+                ]
+            },
+            {
+                cols: 4, rows: 4,
+                grid: [
+                    [2, 3, 3, 2],
+                    [3, 4, 4, 3],
+                    [3, 4, 4, 3],
+                    [2, 3, 3, 2]
+                ]
+            },
+            {
+                cols: 5, rows: 5,
+                grid: [
+                    [2, 1, 3, 1, 2],
+                    [1, 2, 4, 2, 1],
+                    [3, 4, 0, 4, 3],
+                    [1, 2, 4, 2, 1],
+                    [2, 1, 3, 1, 2]
+                ]
+            }
+        ];
+
+        const canvas = document.getElementById('loopCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentLevelIdx = 0;
+        let grid = []; 
+        let cols = 3;
+        let rows = 3;
+        let tileSize = 80;
+        let isSolved = false;
+        let particles = [];
+
+        function initCanvas() {
+            const minDim = Math.min(window.innerWidth - 40, 420);
+            canvas.width = minDim;
+            canvas.height = minDim;
+            tileSize = canvas.width / cols;
+        }
+
+        function loadLevel(idx) {
+            currentLevelIdx = idx;
+            document.getElementById('level-num').innerText = idx + 1;
+            isSolved = false;
+
+            const lvlData = HANDCRAFTED_LEVELS[idx % HANDCRAFTED_LEVELS.length];
+            cols = lvlData.cols;
+            rows = lvlData.rows;
+            initCanvas();
+
+            grid = [];
+            for (let r = 0; r < rows; r++) {
+                grid[r] = [];
+                for (let c = 0; c < cols; c++) {
+                    const type = lvlData.grid[r][c];
+                    const rot = Math.floor(Math.random() * 4);
+                    grid[r][c] = {
+                        type: type,
+                        rot: rot,
+                        correctRot: 0, // базовая ориентация
+                        currentAngle: rot * (Math.PI / 2),
+                        targetAngle: rot * (Math.PI / 2)
+                    };
+                }
+            }
+
+            if (cgSDK && cgSDK.game) {
+                try { cgSDK.game.gameplayStart(); } catch(e){}
+            }
+        }
+
+        function generateRandomLevel() {
+            document.getElementById('level-num').innerText = "Бесконечный 🎲";
+            isSolved = false;
+            cols = 4;
+            rows = 4;
+            initCanvas();
+
+            const types = [1, 2, 3, 4];
+            grid = [];
+            for (let r = 0; r < rows; r++) {
+                grid[r] = [];
+                for (let c = 0; c < cols; c++) {
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    const rot = Math.floor(Math.random() * 4);
+                    grid[r][c] = {
+                        type: type,
+                        rot: rot,
+                        correctRot: 0,
+                        currentAngle: rot * (Math.PI / 2),
+                        targetAngle: rot * (Math.PI / 2)
+                    };
+                }
+            }
+        }
+
+        function hasConn(tile, dir) {
+            if (tile.type === 0) return false;
+            const baseDir = (dir - tile.rot + 4) % 4;
+            return TILE_TYPES[tile.type].includes(baseDir);
+        }
+
+        function checkSolution() {
+            let activeConnectionsCount = 0;
+            let isPerfect = true;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tile = grid[r][c];
+                    if (tile.type === 0) continue;
+
+                    for (let d = 0; d < 4; d++) {
+                        if (hasConn(tile, d)) {
+                            activeConnectionsCount++;
+                            const nr = r + DIRS[d].dr;
+                            const nc = c + DIRS[d].dc;
+
+                            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) {
+                                isPerfect = false;
+                                break;
+                            }
+
+                            const neighbor = grid[nr][nc];
+                            const oppDir = (d + 2) % 4;
+                            if (!hasConn(neighbor, oppDir)) {
+                                isPerfect = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (!isPerfect) break;
+                }
+                if (!isPerfect) break;
+            }
+
+            if (isPerfect && activeConnectionsCount > 0) {
+                isSolved = true;
+                playWinChord();
+                spawnWinParticles();
+
+                if (cgSDK && cgSDK.game) {
+                    try { cgSDK.game.gameplayStop(); } catch(e){}
+                }
+
+                // Показываем рекламу при прохождении уровня перед модальным окном
+                triggerMidrollAd(() => {
+                    document.getElementById('win-modal').classList.remove('hidden');
+                });
+            }
+        }
+
+        function applyHint() {
+            if (isSolved) return;
+            // Ищем первый невернувшийся узел
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tile = grid[r][c];
+                    if (tile.type !== 0 && tile.type !== 4) { // Крест заменять не надо
+                        tile.rot = (tile.rot + 1) % 4;
+                        tile.targetAngle += Math.PI / 2;
+                        playChime(r + c);
+                        checkSolution();
+                        return;
+                    }
+                }
+            }
+        }
+
+        // --- 4. РЕНДЕРИНГ И АНИМАЦИИ ---
+        function spawnWinParticles() {
+            particles = [];
+            for (let i = 0; i < 40; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    color: Math.random() > 0.5 ? '#38bdf8' : '#10b981',
+                    size: Math.random() * 5 + 3,
+                    life: 1.0
+                });
+            }
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.02;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function renderLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tile = grid[r][c];
+                    tile.currentAngle += (tile.targetAngle - tile.currentAngle) * 0.25;
+
+                    const cx = c * tileSize + tileSize / 2;
+                    const cy = r * tileSize + tileSize / 2;
+
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(tile.currentAngle);
+
+                    const conns = TILE_TYPES[tile.type];
+                    if (conns && conns.length > 0) {
+                        ctx.lineWidth = 6;
+                        ctx.lineCap = 'round';
+
+                        if (isSolved) {
+                            ctx.strokeStyle = '#10b981';
+                            ctx.shadowColor = '#10b981';
+                            ctx.shadowBlur = 12;
+                        } else {
+                            ctx.strokeStyle = '#38bdf8';
+                            ctx.shadowColor = '#38bdf8';
+                            ctx.shadowBlur = 6;
+                        }
+
+                        conns.forEach(d => {
+                            ctx.beginPath();
+                            ctx.moveTo(0, 0);
+                            if (d === 0) ctx.lineTo(0, -tileSize / 2);
+                            if (d === 1) ctx.lineTo(tileSize / 2, 0);
+                            if (d === 2) ctx.lineTo(0, tileSize / 2);
+                            if (d === 3) ctx.lineTo(-tileSize / 2, 0);
+                            ctx.stroke();
+                        });
+
+                        ctx.fillStyle = isSolved ? '#10b981' : '#38bdf8';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    ctx.restore();
+                    ctx.strokeStyle = '#0f172a';
+                    ctx.strokeRect(c * tileSize, r * tileSize, tileSize, tileSize);
+                }
+            }
+
+            updateAndDrawParticles();
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- 5. СОБЫТИЯ И КНОПКИ ---
+        canvas.addEventListener('pointerdown', (e) => {
+            if (isSolved) return;
+            initAudio();
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const c = Math.floor(x / tileSize);
+            const r = Math.floor(y / tileSize);
+
+            if (r >= 0 && r < rows && c >= 0 && c < cols) {
+                const tile = grid[r][c];
+                if (tile.type !== 0) {
+                    tile.rot = (tile.rot + 1) % 4;
+                    tile.targetAngle += Math.PI / 2;
+
+                    playChime(r + c);
+                    checkSolution();
+                }
+            }
+        });
+
+        document.getElementById('btn-sound').addEventListener('click', () => {
+            soundEnabled = !soundEnabled;
+            document.getElementById('btn-sound').innerText = soundEnabled ? '🔊 Звук' : '🔇 Выкл';
+        });
+
+        document.getElementById('btn-hint').addEventListener('click', () => {
+            triggerRewardedAd(() => {
+                applyHint();
+            });
+        });
+
+        document.getElementById('btn-next-level').addEventListener('click', () => {
+            document.getElementById('win-modal').classList.add('hidden');
+            loadLevel(currentLevelIdx + 1);
+        });
+
+        document.getElementById('btn-next').addEventListener('click', () => {
+            loadLevel(currentLevelIdx + 1);
+        });
+
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            if (currentLevelIdx > 0) loadLevel(currentLevelIdx - 1);
+        });
+
+        document.getElementById('btn-random').addEventListener('click', () => {
+            generateRandomLevel();
+        });
+
+        window.addEventListener('resize', initCanvas);
+
+        window.onload = () => {
+            initSDK();
+            loadLevel(0);
+            if (cgSDK && cgSDK.game) {
+                try { cgSDK.game.sdkGameLoadingStop(); } catch(e){}
+            }
+            requestAnimationFrame(renderLoop);
+        };
+    </script>
+</body>
+</html>
+f (currentLevelIdx > 0) loadLevel(currentLevelIdx - 1);
+        });
+
+        document.getElementById('btn-random').addEventListener('click', () => {
+            generateRandomLevel();
+        });
+
+        window.addEventListener('resize', initCanvas);
+
+        window.onload = () => {
+            initSDK();
+            loadLevel(0);
+            if (cgSDK && cgSDK.game) {
+                try { cgSDK.game.sdkGameLoadingStop(); } catch(e){}
+            }
+            requestAnimationFrame(renderLoop);
+        };
+    </script>
+</body>
+</html>
