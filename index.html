@@ -112,7 +112,7 @@
             touch-action: none;
             cursor: pointer;
         }
-
+        
         #loopCanvas:focus, #loopCanvas:active {
             outline: none !important;
             background-color: #020617 !important;
@@ -248,14 +248,15 @@
             if (window.Adsgram) {
                 const AdController = window.Adsgram.init({ blockId: "57030" });
                 AdController.show().then((result) => {
-                    // Реклама успешно досмотрена
+                    // Успешный досмотр видео
                     if (onSuccess) onSuccess();
                 }).catch((result) => {
-                    // Реклама не загрузилась или была закрыта раньше времени
-                    console.log("Adsgram error/close:", result);
+                    console.log("Adsgram info:", result);
+                    // Фоллбек: если реклама еще подбирается системами Adsgram, все равно выдаем подсказку
+                    if (onSuccess) onSuccess();
                 });
             } else {
-                // Если скрипт рекламы не загружен (тестирование вне TG)
+                // Тестовый режим вне Telegram
                 if (onSuccess) onSuccess();
             }
         }
@@ -509,7 +510,7 @@
             initCanvas();
         }
 
-        function isTileCorrect(tile) {
+    function isTileCorrect(tile) {
             if (tile.type === 0 || tile.type === 4) return true;
             const cur = (tile.rot % 4 + 4) % 4;
             const target = (tile.correctRot % 4 + 4) % 4;
