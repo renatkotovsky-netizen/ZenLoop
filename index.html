@@ -6,6 +6,8 @@
     <title>Zen Loop: Поток Гармонии</title>
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -241,23 +243,21 @@
             }
         }
 
-        // --- 1. БЕЗОПАСНЫЙ МОДУЛЬ РЕКЛАМЫ ---
-        function triggerMidrollAd(onComplete) {
-            try {
-                if (window.sdk && typeof window.sdk.showBanner === 'function') {
-                    window.sdk.showBanner();
-                }
-            } catch(e) {}
-            if (onComplete) onComplete();
-        }
-
+        // --- 1. ADSGRAM МОДУЛЬ РЕКЛАМЫ (BlockID: 57030) ---
         function triggerRewardedAd(onSuccess) {
-            try {
-                if (window.sdk && typeof window.sdk.showBanner === 'function') {
-                    window.sdk.showBanner();
-                }
-            } catch(e) {}
-            if (onSuccess) onSuccess();
+            if (window.Adsgram) {
+                const AdController = window.Adsgram.init({ blockId: "57030" });
+                AdController.show().then((result) => {
+                    // Реклама успешно досмотрена
+                    if (onSuccess) onSuccess();
+                }).catch((result) => {
+                    // Реклама не загрузилась или была закрыта раньше времени
+                    console.log("Adsgram error/close:", result);
+                });
+            } else {
+                // Если скрипт рекламы не загружен (тестирование вне TG)
+                if (onSuccess) onSuccess();
+            }
         }
 
         // --- 2. АУДИО СИНТЕЗАТОР ASMR ---
@@ -563,14 +563,7 @@
                 isSolved = true;
                 playWinChord();
                 spawnWinParticles();
-
-                if ((currentLevelIdx + 1) % 10 === 0) {
-                    triggerMidrollAd(() => {
-                        document.getElementById('win-modal').classList.remove('hidden');
-                    });
-                } else {
-                    document.getElementById('win-modal').classList.remove('hidden');
-                }
+                document.getElementById('win-modal').classList.remove('hidden');
             }
         }
 
@@ -599,7 +592,7 @@
             }
         }
 
-        // --- 4. РЕНДЕРИНГ (Без динамических свечений и теней) ---
+        // --- 4. РЕНДЕРИНГ ---
         function spawnWinParticles() {
             particles = [];
             for (let i = 0; i < 40; i++) {
@@ -694,7 +687,7 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // --- 5. ОБРАБОТКА НАЖАТИЙ БЕЗ ВСПОЛОХОВ ---
+        // --- 5. ОБРАБОТКА НАЖАТИЙ ---
         function handleInteraction(clientX, clientY) {
             if (isSolved) return;
             initAudio();
